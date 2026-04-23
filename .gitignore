@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.env.local
+.env
+dist/
+*.log
+server/node_modules/
+server/dist/
+.firebase/
+*firebase-adminsdk*.json
+*.json.key
+tsconfig.tsbuildinfo
+server/

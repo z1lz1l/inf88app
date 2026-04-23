@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#0a0a0a"/>
+
+  <!-- Outer ring glow (subtle) -->
+  <circle cx="256" cy="220" r="130" fill="none" stroke="#f59e0b" stroke-width="2" opacity="0.08"/>
+
+  <!-- Main infinity loop - outer path -->
+  <path d="M116,220 C116,145 163,98 220,98 C277,98 256,165 256,220 C256,275 235,342 292,342 C349,342 396,295 396,220 C396,145 349,98 292,98 C235,98 256,165 256,220 C256,275 277,342 220,342 C163,342 116,295 116,220 Z"
+    fill="none" stroke="#f59e0b" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Inner highlight accent -->
+  <path d="M116,220 C116,145 163,98 220,98 C277,98 256,165 256,220"
+    fill="none" stroke="#fcd34d" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Center dot -->
+  <circle cx="256" cy="220" r="14" fill="#f59e0b"/>
+  <circle cx="256" cy="220" r="7" fill="#0a0a0a"/>
+
+  <!-- End dots -->
+  <circle cx="116" cy="220" r="10" fill="#f59e0b" opacity="0.5"/>
+  <circle cx="396" cy="220" r="10" fill="#f59e0b" opacity="0.5"/>
+
+  <!-- Text: 88INF -->
+  <text x="256" y="420"
+    text-anchor="middle"
+    font-family="'SF Pro Display', -apple-system, Arial, sans-serif"
+    font-size="52" font-weight="700"
+    letter-spacing="8"
+    fill="#f59e0b">88INF</text>
+
+  <!-- Subtext -->
+  <text x="256" y="460"
+    text-anchor="middle"
+    font-family="'SF Pro Display', -apple-system, Arial, sans-serif"
+    font-size="18" font-weight="400"
+    letter-spacing="5"
+    fill="#444">SOLANA</text>
+</svg>

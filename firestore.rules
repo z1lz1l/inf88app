@@ -1,0 +1,64 @@
+// 88inf — Firestore Security Rules
+// File: firestore.rules
+//
+// Deploy with: firebase deploy --only firestore:rules
+//
+// These rules ensure:
+// - Users can only read/write their OWN data
+// - Balance changes only happen server-side (via admin SDK)
+// - Config data is read-only for users
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── User documents ──────────────────────────────────────
+    // Each user can read their own doc.
+    // They CANNOT write balance, totalEarned, onchain — server only.
+
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Users can only update their own display name and wallet address
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['displayName', 'walletAddress', 'updatedAt']);
+
+      // Creation happens server-side (ensureUserDoc)
+      allow create: if false;
+      allow delete: if false;
+    }
+
+    // ── Referral codes ──────────────────────────────────────
+    match /referralCodes/{code} {
+      allow read: if request.auth != null;
+      allow write: if false; // server only
+    }
+
+    // ── Config (token price, rewards pool) ──────────────────
+    match /config/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false; // server only
+    }
+
+    // ── Withdrawal queue ────────────────────────────────────
+    match /withdrawalQueue/{docId} {
+      // Users can see their own pending withdrawals
+      allow read: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+      allow write: if false; // server only
+    }
+
+    // ── Buy queue (internal) ────────────────────────────────
+    match /buyQueue/{docId} {
+      allow read, write: if false; // server only, never expose
+    }
+
+    // ── Everything else: deny ───────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
