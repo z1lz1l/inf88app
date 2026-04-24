@@ -183,11 +183,18 @@ function AdPlayer({
   );
 }
 
-// Full-screen ad with iframe — for all ad types
+// Full-screen ad countdown — opens ad in popup, shows countdown overlay here
 function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: () => void; onCancel: () => void; duration?: number }) {
   const [t, setT] = useState(duration);
+  const [popupOpened, setPopupOpened] = useState(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+
+  useEffect(() => {
+    // Open the ad in a new window (not iframe — ad networks block iframe embedding)
+    const popup = window.open("https://omg10.com/4/10919808", "_blank", "width=480,height=700,scrollbars=yes,noopener");
+    setPopupOpened(!!popup);
+  }, []);
 
   useEffect(() => {
     const end = Date.now() + duration * 1000;
@@ -197,45 +204,71 @@ function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: (
       if (rem <= 0) { clearInterval(iv); setTimeout(() => onCompleteRef.current(), 300); }
     }, 100);
     return () => clearInterval(iv);
-  }, []);
+  }, [duration]);
+
+  const pct = Math.round(((duration - t) / duration) * 100);
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[150] bg-black flex flex-col"
+      className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center px-6"
     >
-      {/* Ad iframe */}
-      <div className="flex-1 relative">
-        <iframe
-          src="https://omg10.com/4/10919808"
-          className="w-full h-full border-0"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          title="Sponsored content"
+      {/* Big countdown ring */}
+      <div className="relative w-32 h-32 mb-8">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#27272a" strokeWidth="8" />
+          <circle
+            cx="60" cy="60" r="52" fill="none"
+            stroke="#f59e0b" strokeWidth="8"
+            strokeDasharray={`${2 * Math.PI * 52}`}
+            strokeDashoffset={`${2 * Math.PI * 52 * (1 - pct / 100)}`}
+            strokeLinecap="round"
+            style={{ transition: "stroke-dashoffset 0.9s linear" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-4xl font-black text-amber-400 font-mono">{t}</span>
+          <span className="text-[10px] text-zinc-500 uppercase tracking-widest">sec</span>
+        </div>
+      </div>
+
+      <p className="text-zinc-200 text-lg font-bold mb-2">Watch the Ad</p>
+      <p className="text-zinc-500 text-sm text-center leading-relaxed mb-8">
+        {popupOpened
+          ? "Ad opened in a new window.\nWatch it to earn your reward."
+          : "Allow popups to watch the ad."}
+      </p>
+
+      {/* Progress bar */}
+      <div className="w-full max-w-xs h-1.5 bg-zinc-800 rounded-full overflow-hidden mb-8">
+        <motion.div
+          className="h-full bg-amber-500 rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.9, ease: "linear" }}
         />
       </div>
 
-      {/* Bottom bar */}
-      <div className="bg-zinc-950 border-t border-zinc-800 px-5 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full border-2 border-amber-500 flex items-center justify-center text-amber-400 font-bold text-sm shrink-0">
-            {t}
-          </div>
-          <div>
-            <p className="text-zinc-200 text-sm font-semibold">Watching ad…</p>
-            <p className="text-zinc-500 text-xs">{t > 0 ? `${t}s remaining` : "Done!"}</p>
-          </div>
-        </div>
-        {t <= 0 && (
-          <button
-            onClick={onCancel}
-            className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-400 transition-colors"
-          >
-            <X size={18} />
-          </button>
-        )}
-      </div>
+      {t > 0 ? (
+        <p className="text-zinc-700 text-xs">Cannot skip · {t}s remaining</p>
+      ) : (
+        <button
+          onClick={() => onCompleteRef.current()}
+          className="bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold px-8 py-3 rounded-2xl transition-all"
+        >
+          Collect Reward
+        </button>
+      )}
+
+      {/* Cancel (only before countdown) */}
+      <button
+        onClick={onCancel}
+        className="absolute top-6 right-6 p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-600 hover:text-zinc-400 transition-colors"
+      >
+        <X size={20} />
+      </button>
     </motion.div>
   );
 }
