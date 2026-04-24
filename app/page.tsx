@@ -183,8 +183,8 @@ function AdPlayer({
   );
 }
 
-// Small floating badge — used for "Watch Short Ad" so Monetag can show on top
-function AdCountdownBadge({ onComplete }: { onComplete: () => void }) {
+// Full-screen ad with iframe — for Watch Short Ad
+function AdIframePlayer({ onComplete, onCancel }: { onComplete: () => void; onCancel: () => void }) {
   const [t, setT] = useState(30);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
@@ -201,17 +201,40 @@ function AdCountdownBadge({ onComplete }: { onComplete: () => void }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 40 }}
-      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[50] bg-zinc-900/95 border border-amber-500/40 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl backdrop-blur-xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[150] bg-black flex flex-col"
     >
-      <div className="w-9 h-9 rounded-full border-2 border-amber-500 flex items-center justify-center text-amber-400 font-bold text-sm">
-        {t}
+      {/* Ad iframe */}
+      <div className="flex-1 relative">
+        <iframe
+          src="https://omg10.com/4/10919808"
+          className="w-full h-full border-0"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          title="Sponsored content"
+        />
       </div>
-      <div>
-        <p className="text-zinc-200 text-sm font-semibold">Watching ad…</p>
-        <p className="text-zinc-500 text-xs">+0.08 $INF88$ in {t}s</p>
+
+      {/* Bottom bar */}
+      <div className="bg-zinc-950 border-t border-zinc-800 px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full border-2 border-amber-500 flex items-center justify-center text-amber-400 font-bold text-sm shrink-0">
+            {t}
+          </div>
+          <div>
+            <p className="text-zinc-200 text-sm font-semibold">Watching ad…</p>
+            <p className="text-zinc-500 text-xs">+0.08 $INF88$ in {t}s</p>
+          </div>
+        </div>
+        {t <= 0 && (
+          <button
+            onClick={onCancel}
+            className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-400 transition-colors"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
     </motion.div>
   );
@@ -698,7 +721,9 @@ export default function EarnPage() {
       setMiningActive(false);
       setMiningStartedAt(null);
     } else {
-      setAdState({ visible: true, reason: "mining" });
+      setMiningActive(true);
+      setMiningStartedAt(Date.now());
+      showToast("Miner activated!", true);
     }
   }
 
@@ -713,18 +738,18 @@ export default function EarnPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-slate-100 pb-28 max-w-md mx-auto relative overflow-x-hidden">
 
-      {/* Ad overlay — full screen for mining/interstitial, badge for task ads */}
+      {/* Ad overlay */}
       <AnimatePresence>
         {adState.visible && adState.reason === "task" && (
-          <AdCountdownBadge onComplete={handleAdComplete} />
+          <AdIframePlayer onComplete={handleAdComplete} onCancel={handleAdCancel} />
         )}
-        {adState.visible && adState.reason !== "task" && (
+        {adState.visible && adState.reason === "interstitial" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <AdPlayer
               onComplete={handleAdComplete}
               onCancel={handleAdCancel}
-              title={adState.reason === "mining" ? "STARTING MINER" : "SPONSOR MESSAGE"}
-              duration={adState.reason === "mining" ? 5 : 10}
+              title="SPONSOR MESSAGE"
+              duration={10}
             />
           </motion.div>
         )}
