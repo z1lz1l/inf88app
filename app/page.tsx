@@ -545,32 +545,29 @@ export default function EarnPage() {
     return uuid;
   }
 
-  function openPollfish(uuid: string, onDone: (completed: boolean) => void) {
-    const apiKey = process.env.NEXT_PUBLIC_POLLFISH_API_KEY;
+  function openBitlabs(uuid: string, onDone: (completed: boolean) => void) {
+    const apiKey = process.env.NEXT_PUBLIC_SURVEY_API_KEY;
     if (!apiKey) { onDone(false); return; }
 
-    const run = () => {
-      try {
-        (window as any).Pollfish.renderSurvey({
-          api_key: apiKey,
-          uuid,
-          indicatorPosition: "MIDDLE_LEFT",
-          autoHideIndicator: false,
-          surveyFinished: () => onDone(true),
-          userNotEligible: () => onDone(false),
-          surveyNotAvailable: () => onDone(false),
-          surveyClosed: () => {},
-        });
-      } catch { onDone(false); }
-    };
+    // Open BitLabs offerwall in a popup
+    const url = `https://web.bitlabs.ai?token=${apiKey}&uid=${encodeURIComponent(uuid)}`;
+    const popup = window.open(url, "bitlabs_survey", "width=420,height=700,scrollbars=yes");
 
-    if ((window as any).Pollfish) { run(); return; }
-    const s = document.createElement("script");
-    s.src = "https://storage.googleapis.com/pollfish_production/sdk/webplugin/pollfish.min.js";
-    s.async = true;
-    s.onload = run;
-    s.onerror = () => onDone(false);
-    document.head.appendChild(s);
+    if (!popup) {
+      showToast("Allow popups for surveys", false);
+      onDone(false);
+      return;
+    }
+
+    // Poll until popup closes
+    const timer = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(timer);
+        // S2S callback from BitLabs will credit balance server-side
+        // Optimistically credit locally too (backend will validate)
+        onDone(true);
+      }
+    }, 1000);
   }
 
   function handleTask(task: Task) {
@@ -591,7 +588,7 @@ export default function EarnPage() {
     }
     if (task.type === "survey") {
       showToast("Loading survey…", false);
-      openPollfish(getPollFishUuid(), (completed) => {
+      openBitlabs(getPollFishUuid(), (completed) => {
         if (completed) {
           saveCooldown(task.id, Date.now());
           credit(task.reward);
