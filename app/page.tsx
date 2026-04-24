@@ -536,6 +536,43 @@ export default function EarnPage() {
     });
   }
 
+  function getPollFishUuid(): string {
+    let uuid = localStorage.getItem("88inf_pf_uuid");
+    if (!uuid) {
+      uuid = crypto.randomUUID();
+      localStorage.setItem("88inf_pf_uuid", uuid);
+    }
+    return uuid;
+  }
+
+  function openPollfish(uuid: string, onDone: (completed: boolean) => void) {
+    const apiKey = process.env.NEXT_PUBLIC_POLLFISH_API_KEY;
+    if (!apiKey) { onDone(false); return; }
+
+    const run = () => {
+      try {
+        (window as any).Pollfish.renderSurvey({
+          api_key: apiKey,
+          uuid,
+          indicatorPosition: "MIDDLE_LEFT",
+          autoHideIndicator: false,
+          surveyFinished: () => onDone(true),
+          userNotEligible: () => onDone(false),
+          surveyNotAvailable: () => onDone(false),
+          surveyClosed: () => {},
+        });
+      } catch { onDone(false); }
+    };
+
+    if ((window as any).Pollfish) { run(); return; }
+    const s = document.createElement("script");
+    s.src = "https://storage.googleapis.com/pollfish_production/sdk/webplugin/pollfish.min.js";
+    s.async = true;
+    s.onload = run;
+    s.onerror = () => onDone(false);
+    document.head.appendChild(s);
+  }
+
   function handleTask(task: Task) {
     const now = Date.now();
     if (task.type === "ad") {
@@ -553,13 +590,17 @@ export default function EarnPage() {
       return;
     }
     if (task.type === "survey") {
-      showToast("Redirecting to survey partner…", false);
-      setTimeout(() => {
-        saveCooldown(task.id, now);
-        credit(task.reward);
-        showToast(`+${task.reward} $INF88$ from survey!`);
-        claimReward("survey").catch(() => {});
-      }, 3500);
+      showToast("Loading survey…", false);
+      openPollfish(getPollFishUuid(), (completed) => {
+        if (completed) {
+          saveCooldown(task.id, Date.now());
+          credit(task.reward);
+          showToast(`+${task.reward} $INF88$ from survey!`);
+          claimReward("survey").catch(() => {});
+        } else {
+          showToast("No survey available right now", false);
+        }
+      });
       return;
     }
     // checkin
