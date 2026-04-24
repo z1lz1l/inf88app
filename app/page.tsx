@@ -223,73 +223,72 @@ function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: (
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[149] bg-zinc-950/98 backdrop-blur-md flex flex-col items-center justify-center px-6"
+      className="fixed inset-0 z-[200] bg-zinc-950 flex flex-col"
     >
-      {/* Close button */}
-      <button
-        onClick={onCancel}
-        className="absolute top-6 right-6 p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-600 hover:text-zinc-400 transition-colors"
-      >
-        <X size={20} />
-      </button>
-
-      {/* Ad content area — banner will be injected here */}
-      <div
-        id="monetag-banner-slot"
-        className="w-full max-w-sm min-h-[250px] flex items-center justify-center mb-6 rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 relative"
-      >
-        {/* Placeholder shown while ad loads */}
-        <div className="flex flex-col items-center gap-3 text-zinc-700 px-6 text-center">
-          <Activity size={28} strokeWidth={1.5} className="animate-pulse" />
-          <p className="text-xs tracking-widest uppercase">Sponsored content</p>
-        </div>
-      </div>
-
-      {/* Bottom row: countdown + label */}
-      <div className="flex items-center gap-4 mb-6">
-        {/* Ring */}
-        <div className="relative w-14 h-14 shrink-0">
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 56 56">
-            <circle cx="28" cy="28" r="24" fill="none" stroke="#18181b" strokeWidth="4" />
-            <circle
-              cx="28" cy="28" r="24" fill="none"
-              stroke="#f59e0b" strokeWidth="4"
-              strokeDasharray={2 * Math.PI * 24}
-              strokeDashoffset={2 * Math.PI * 24 * (1 - pct / 100)}
-              strokeLinecap="round"
-              style={{ transition: "stroke-dashoffset 0.95s linear" }}
-            />
-          </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-amber-400 font-black text-base">{t}</span>
-        </div>
-        <div>
-          <p className="text-zinc-200 font-semibold text-sm">
-            {t > 0 ? `Ad playing · ${t}s` : "Ad complete!"}
-          </p>
-          <p className="text-zinc-600 text-xs">
-            {t > 0 ? "Please wait to collect your reward" : "Tap below to continue"}
-          </p>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full max-w-sm h-1 bg-zinc-800 rounded-full overflow-hidden mb-4">
-        <div
-          className="h-full bg-amber-500 rounded-full"
-          style={{ width: `${pct}%`, transition: "width 0.95s linear" }}
-        />
-      </div>
-
-      {t <= 0 && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          onClick={() => onCompleteRef.current()}
-          className="w-full max-w-sm bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-5 pt-10 pb-4">
+        <p className="text-zinc-600 text-[11px] tracking-[0.2em] uppercase font-medium">Sponsored</p>
+        <button
+          onClick={onCancel}
+          className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-full text-zinc-500 hover:text-zinc-300 transition-colors"
         >
-          <CheckCircle size={18} /> Collect Reward
-        </motion.button>
-      )}
+          <X size={18} />
+        </button>
+      </div>
+
+      {/* Banner slot — fills the screen, real ad will go here once Banner zone approved */}
+      <div id="monetag-banner-slot" className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
+        <img src="/coin.jpg" alt="" className="w-20 h-20 rounded-full object-cover opacity-30" />
+        <p className="text-zinc-700 text-sm tracking-widest uppercase">Loading ad…</p>
+      </div>
+
+      {/* Bottom area */}
+      <div className="px-5 pb-10 pt-4 flex flex-col items-center gap-4">
+        {/* Progress bar */}
+        <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-amber-500 rounded-full"
+            style={{ width: `${pct}%`, transition: "width 0.95s linear" }}
+          />
+        </div>
+
+        {/* Countdown row */}
+        <div className="flex items-center gap-3 w-full">
+          <div className="relative w-12 h-12 shrink-0">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
+              <circle cx="24" cy="24" r="20" fill="none" stroke="#27272a" strokeWidth="3.5" />
+              <circle
+                cx="24" cy="24" r="20" fill="none"
+                stroke="#f59e0b" strokeWidth="3.5"
+                strokeDasharray={2 * Math.PI * 20}
+                strokeDashoffset={2 * Math.PI * 20 * (1 - pct / 100)}
+                strokeLinecap="round"
+                style={{ transition: "stroke-dashoffset 0.95s linear" }}
+              />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-amber-400 font-black text-sm">{t}</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-zinc-300 font-semibold text-sm">{t > 0 ? `${t} seconds remaining` : "Ad complete!"}</p>
+            <p className="text-zinc-600 text-xs">{t > 0 ? "Please wait for your reward" : "Tap below to collect"}</p>
+          </div>
+        </div>
+
+        {t <= 0 ? (
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => onCompleteRef.current()}
+            className="w-full bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 text-base"
+          >
+            <CheckCircle size={18} /> Collect Reward
+          </motion.button>
+        ) : (
+          <div className="w-full py-4 rounded-2xl bg-zinc-800/50 flex items-center justify-center text-zinc-600 text-sm font-medium">
+            Cannot skip · {t}s
+          </div>
+        )}
+      </div>
 
       {/* External link warning — shown if any link is clicked */}
       <AnimatePresence>
@@ -836,13 +835,13 @@ export default function EarnPage() {
       {/* Ad overlay */}
       <AnimatePresence>
         {adState.visible && adState.reason === "task" && (
-          <AdIframePlayer key="ad-task" onComplete={handleAdComplete} onCancel={handleAdCancel} duration={30} />
+          <AdIframePlayer key="ad-task" onComplete={handleAdComplete} onCancel={handleAdCancel} duration={15} />
         )}
         {adState.visible && adState.reason === "mining" && (
-          <AdIframePlayer key="ad-mining" onComplete={handleAdComplete} onCancel={handleAdCancel} duration={10} />
+          <AdIframePlayer key="ad-mining" onComplete={handleAdComplete} onCancel={handleAdCancel} duration={8} />
         )}
         {adState.visible && adState.reason === "interstitial" && (
-          <AdIframePlayer key="ad-interstitial" onComplete={handleAdComplete} onCancel={handleAdCancel} duration={15} />
+          <AdIframePlayer key="ad-interstitial" onComplete={handleAdComplete} onCancel={handleAdCancel} duration={8} />
         )}
       </AnimatePresence>
 
