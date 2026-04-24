@@ -189,14 +189,16 @@ function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: (
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  // Inject In-Page Push ad (shows directly on page, no iframe issues)
+  // Inject In-Page Push into the banner slot div
   useEffect(() => {
+    const slot = document.getElementById("monetag-banner-slot");
+    if (!slot) return;
     const s = document.createElement("script");
     s.dataset.zone = "10919989";
     s.src = "https://nap5k.com/tag.min.js";
     s.async = true;
-    (document.documentElement || document.body).appendChild(s);
-    return () => { try { s.parentNode?.removeChild(s); } catch {} };
+    slot.appendChild(s);
+    return () => { try { slot.removeChild(s); } catch {} };
   }, []);
 
   useEffect(() => {
@@ -227,40 +229,47 @@ function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: (
         <X size={20} />
       </button>
 
-      {/* Sponsor label */}
-      <p className="text-zinc-600 text-[10px] tracking-[0.25em] uppercase mb-10">Sponsored</p>
-
-      {/* Countdown ring */}
-      <div className="relative w-36 h-36 mb-10">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-          <circle cx="60" cy="60" r="52" fill="none" stroke="#18181b" strokeWidth="6" />
-          <circle
-            cx="60" cy="60" r="52" fill="none"
-            stroke="#f59e0b" strokeWidth="6"
-            strokeDasharray={circumference}
-            strokeDashoffset={circumference * (1 - pct / 100)}
-            strokeLinecap="round"
-            style={{ transition: "stroke-dashoffset 0.95s linear" }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <img src="/coin.jpg" alt="" className="w-14 h-14 rounded-full object-cover opacity-60" />
-        </div>
-        {/* Seconds badge */}
-        <div className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-amber-500 flex items-center justify-center shadow-lg">
-          <span className="text-amber-950 font-black text-sm">{t}</span>
+      {/* Ad content area — banner will be injected here */}
+      <div
+        id="monetag-banner-slot"
+        className="w-full max-w-sm min-h-[250px] flex items-center justify-center mb-6 rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 relative"
+      >
+        {/* Placeholder shown while ad loads */}
+        <div className="flex flex-col items-center gap-3 text-zinc-700 px-6 text-center">
+          <Activity size={28} strokeWidth={1.5} className="animate-pulse" />
+          <p className="text-xs tracking-widest uppercase">Sponsored content</p>
         </div>
       </div>
 
-      <p className="text-zinc-200 text-xl font-bold mb-2">Ad Break</p>
-      <p className="text-zinc-500 text-sm text-center max-w-xs leading-relaxed mb-10">
-        {t > 0
-          ? `Watch for ${t} more second${t !== 1 ? "s" : ""} to earn your reward`
-          : "Great — collecting your reward now!"}
-      </p>
+      {/* Bottom row: countdown + label */}
+      <div className="flex items-center gap-4 mb-6">
+        {/* Ring */}
+        <div className="relative w-14 h-14 shrink-0">
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 56 56">
+            <circle cx="28" cy="28" r="24" fill="none" stroke="#18181b" strokeWidth="4" />
+            <circle
+              cx="28" cy="28" r="24" fill="none"
+              stroke="#f59e0b" strokeWidth="4"
+              strokeDasharray={2 * Math.PI * 24}
+              strokeDashoffset={2 * Math.PI * 24 * (1 - pct / 100)}
+              strokeLinecap="round"
+              style={{ transition: "stroke-dashoffset 0.95s linear" }}
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-amber-400 font-black text-base">{t}</span>
+        </div>
+        <div>
+          <p className="text-zinc-200 font-semibold text-sm">
+            {t > 0 ? `Ad playing · ${t}s` : "Ad complete!"}
+          </p>
+          <p className="text-zinc-600 text-xs">
+            {t > 0 ? "Please wait to collect your reward" : "Tap below to continue"}
+          </p>
+        </div>
+      </div>
 
       {/* Progress bar */}
-      <div className="w-full max-w-xs h-1 bg-zinc-800 rounded-full overflow-hidden">
+      <div className="w-full max-w-sm h-1 bg-zinc-800 rounded-full overflow-hidden mb-4">
         <div
           className="h-full bg-amber-500 rounded-full"
           style={{ width: `${pct}%`, transition: "width 0.95s linear" }}
@@ -272,9 +281,9 @@ function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: (
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           onClick={() => onCompleteRef.current()}
-          className="mt-8 bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold px-10 py-3.5 rounded-2xl transition-all"
+          className="w-full max-w-sm bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
         >
-          Collect Reward
+          <CheckCircle size={18} /> Collect Reward
         </motion.button>
       )}
     </motion.div>
