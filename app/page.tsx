@@ -138,6 +138,7 @@ function Toast({ msg, positive }: { msg: string; positive: boolean }) {
   );
 }
 
+// Full-screen AdPlayer — used only for mining startup (5s) and interstitials
 function AdPlayer({
   onComplete,
   onCancel,
@@ -161,7 +162,7 @@ function AdPlayer({
       if (rem <= 0) { clearInterval(iv); setTimeout(() => onCompleteRef.current(), 300); }
     }, 100);
     return () => clearInterval(iv);
-  }, [duration]); // duration only — onComplete via ref to avoid resetting on re-render
+  }, [duration]);
 
   return (
     <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center z-[150] px-4">
@@ -172,10 +173,6 @@ function AdPlayer({
         <X size={22} />
       </button>
       <p className="text-zinc-500 text-xs tracking-[0.2em] uppercase mb-8">{title}</p>
-      <div className="w-full max-w-xs aspect-video bg-zinc-900 rounded-2xl border border-zinc-800 flex items-center justify-center relative overflow-hidden">
-        <Activity className="text-zinc-800 w-24 h-24 opacity-20" />
-        <span className="text-zinc-500 font-medium z-10 absolute">Sponsor Content</span>
-      </div>
       <div className="flex items-center gap-3 mt-8">
         <div className="w-11 h-11 rounded-full border-2 border-amber-500 flex items-center justify-center text-amber-400 font-bold text-base">
           {t}
@@ -183,6 +180,40 @@ function AdPlayer({
         <span className="text-zinc-400 text-sm">{t > 0 ? "Please wait…" : "Done!"}</span>
       </div>
     </div>
+  );
+}
+
+// Small floating badge — used for "Watch Short Ad" so Monetag can show on top
+function AdCountdownBadge({ onComplete }: { onComplete: () => void }) {
+  const [t, setT] = useState(30);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
+  useEffect(() => {
+    const end = Date.now() + 30000;
+    const iv = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      setT(rem);
+      if (rem <= 0) { clearInterval(iv); setTimeout(() => onCompleteRef.current(), 300); }
+    }, 100);
+    return () => clearInterval(iv);
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 40 }}
+      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[50] bg-zinc-900/95 border border-amber-500/40 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl backdrop-blur-xl"
+    >
+      <div className="w-9 h-9 rounded-full border-2 border-amber-500 flex items-center justify-center text-amber-400 font-bold text-sm">
+        {t}
+      </div>
+      <div>
+        <p className="text-zinc-200 text-sm font-semibold">Watching ad…</p>
+        <p className="text-zinc-500 text-xs">+0.08 $INF88$ in {t}s</p>
+      </div>
+    </motion.div>
   );
 }
 
@@ -686,15 +717,18 @@ export default function EarnPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-slate-100 pb-28 max-w-md mx-auto relative overflow-x-hidden">
 
-      {/* Ad overlay */}
+      {/* Ad overlay — full screen for mining/interstitial, badge for task ads */}
       <AnimatePresence>
-        {adState.visible && (
+        {adState.visible && adState.reason === "task" && (
+          <AdCountdownBadge onComplete={handleAdComplete} />
+        )}
+        {adState.visible && adState.reason !== "task" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <AdPlayer
               onComplete={handleAdComplete}
               onCancel={handleAdCancel}
-              title={adState.reason === "mining" ? "STARTING MINER" : adState.reason === "interstitial" ? "SPONSOR MESSAGE" : "ADVERTISEMENT"}
-              duration={adState.reason === "task" ? 30 : adState.reason === "mining" ? 5 : 10}
+              title={adState.reason === "mining" ? "STARTING MINER" : "SPONSOR MESSAGE"}
+              duration={adState.reason === "mining" ? 5 : 10}
             />
           </motion.div>
         )}
