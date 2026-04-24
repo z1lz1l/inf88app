@@ -570,9 +570,20 @@ export default function EarnPage() {
     }, 1000);
   }
 
+  function triggerMonetagAd() {
+    try {
+      // Force Monetag vignette to show now
+      const s = document.createElement("script");
+      s.dataset.zone = "10919687";
+      s.src = "https://n6wxm.com/vignette.min.js";
+      document.body.appendChild(s);
+    } catch {}
+  }
+
   function handleTask(task: Task) {
     const now = Date.now();
     if (task.type === "ad") {
+      triggerMonetagAd();
       setAdState({ visible: true, reason: "task" });
       return;
     }

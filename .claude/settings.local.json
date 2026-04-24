@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://inf88app-4z3i.vercel.app\")",
+      "Bash(curl -s \"https://inf88app-4z3i.vercel.app/_next/static/chunks/038v_wbbo8ulh.js\")",
+      "Bash(curl -s \"https://inf88app-4z3i.vercel.app/_next/static/chunks/0juahb6gjlm51.js\")"
+    ]
+  }
+}

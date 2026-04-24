@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Metadata } from "next";
 import { WalletProvider } from "@/lib/wallet";
+import Script from "next/script";
 
 export const viewport = {
   themeColor: "#080808",
@@ -40,6 +41,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <WalletProvider>
           {children}
         </WalletProvider>
+        {/* Monetag Vignette — passive revenue on page interactions */}
+        <Script
+          id="monetag-vignette"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(s){s.dataset.zone='10919687',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement,document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+          }}
+        />
       </body>
     </html>
   );
