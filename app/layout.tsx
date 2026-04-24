@@ -41,13 +41,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <WalletProvider>
           {children}
         </WalletProvider>
-        {/* Monetag Multitag — covers all ad formats automatically */}
+        {/* Monetag Vignette — in-page overlay, no popups */}
         <Script
-          id="monetag-multitag"
+          id="monetag-vignette"
           strategy="afterInteractive"
-          src="https://quge5.com/88/tag.min.js"
-          data-zone="233125"
-          data-cfasync="false"
+          dangerouslySetInnerHTML={{
+            __html: `(function(s){s.dataset.zone='10919687',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement,document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+          }}
         />
       </body>
     </html>
