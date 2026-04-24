@@ -183,22 +183,26 @@ function AdPlayer({
   );
 }
 
-// Full-screen ad break — in-app countdown, triggers Monetag vignette in background
+// Full-screen ad break — in-app overlay only, no external scripts or popups
 function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: () => void; onCancel: () => void; duration?: number }) {
   const [t, setT] = useState(duration);
+  const [externalUrl, setExternalUrl] = useState<string | null>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  // Inject In-Page Push into the banner slot div
+  // Intercept any link click inside the overlay → show in-app warning instead
   useEffect(() => {
-    const slot = document.getElementById("monetag-banner-slot");
-    if (!slot) return;
-    const s = document.createElement("script");
-    s.dataset.zone = "10919989";
-    s.src = "https://nap5k.com/tag.min.js";
-    s.async = true;
-    slot.appendChild(s);
-    return () => { try { slot.removeChild(s); } catch {} };
+    function onLinkClick(e: MouseEvent) {
+      const a = (e.target as Element).closest("a[href]") as HTMLAnchorElement | null;
+      if (!a) return;
+      const href = a.href;
+      if (!href || href.startsWith("javascript") || href === "#") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      setExternalUrl(href);
+    }
+    document.addEventListener("click", onLinkClick, true);
+    return () => document.removeEventListener("click", onLinkClick, true);
   }, []);
 
   useEffect(() => {
@@ -286,6 +290,47 @@ function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: (
           <CheckCircle size={18} /> Collect Reward
         </motion.button>
       )}
+
+      {/* External link warning — shown if any link is clicked */}
+      <AnimatePresence>
+        {externalUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/85 backdrop-blur-sm flex items-end justify-center pb-10 px-5 z-10"
+          >
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-3xl p-6 w-full max-w-sm"
+            >
+              <div className="w-11 h-11 bg-amber-500/10 rounded-2xl flex items-center justify-center mb-4">
+                <ExternalLink size={20} className="text-amber-400" />
+              </div>
+              <p className="text-zinc-100 font-bold mb-1">יציאה לאתר חיצוני</p>
+              <p className="text-zinc-500 text-sm leading-relaxed mb-5">
+                הקישור הזה מוביל לאתר שאינו קשור לאפליקציה שלנו. האם להמשיך?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setExternalUrl(null)}
+                  className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold rounded-2xl"
+                >
+                  ביטול
+                </button>
+                <button
+                  onClick={() => { window.open(externalUrl, "_blank", "noopener,noreferrer"); setExternalUrl(null); }}
+                  className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold rounded-2xl"
+                >
+                  פתח
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -612,13 +657,15 @@ export default function EarnPage() {
     return () => clearInterval(iv);
   }, [miningActive, effectiveRatePerSec]);
 
-  // Interstitial ads every ~5 min while mining
+  // Show ad when user returns to app tab while mining (visibility change)
   useEffect(() => {
-    if (!miningActive || adState.visible) return;
-    const iv = setInterval(() => {
-      if (Math.random() < 0.25) setAdState({ visible: true, reason: "interstitial" });
-    }, 5 * 60 * 1000);
-    return () => clearInterval(iv);
+    function onVisible() {
+      if (document.visibilityState === "visible" && miningActive && !adState.visible) {
+        setAdState({ visible: true, reason: "interstitial" });
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [miningActive, adState.visible]);
 
   const showToast = useCallback((msg: string, positive = true) => {
