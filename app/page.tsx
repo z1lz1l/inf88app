@@ -603,11 +603,7 @@ export default function EarnPage() {
 
   function triggerMonetagAd() {
     try {
-      // Force Monetag vignette to show now
-      const s = document.createElement("script");
-      s.dataset.zone = "10919687";
-      s.src = "https://n6wxm.com/vignette.min.js";
-      document.body.appendChild(s);
+      window.open("https://omg10.com/4/10919808", "_blank", "width=480,height=700,scrollbars=yes,noopener");
     } catch {}
   }
 
