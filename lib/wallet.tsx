@@ -1,7 +1,6 @@
 "use client";
 
 import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth";
-import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import { useEffect, useState } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
@@ -35,31 +34,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           },
           showWalletUIs: false,
         },
-
-        externalWallets: {
-          solana: {
-            connectors: toSolanaWalletConnectors(),
-          },
-        },
-
-        defaultChain: {
-          id: 101,
-          name: "Solana",
-          network: "mainnet-beta",
-          nativeCurrency: { name: "SOL", symbol: "SOL", decimals: 9 },
-          rpcUrls: {
-            default: { http: [process.env.NEXT_PUBLIC_SOLANA_RPC || ""] },
-          },
-        },
-        supportedChains: [{
-          id: 101,
-          name: "Solana",
-          network: "mainnet-beta",
-          nativeCurrency: { name: "SOL", symbol: "SOL", decimals: 9 },
-          rpcUrls: {
-            default: { http: [process.env.NEXT_PUBLIC_SOLANA_RPC || ""] },
-          },
-        }],
       }}
     >
       {children}
