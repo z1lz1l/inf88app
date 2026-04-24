@@ -183,14 +183,14 @@ function AdPlayer({
   );
 }
 
-// Full-screen ad with iframe — for Watch Short Ad
-function AdIframePlayer({ onComplete, onCancel }: { onComplete: () => void; onCancel: () => void }) {
-  const [t, setT] = useState(30);
+// Full-screen ad with iframe — for all ad types
+function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: () => void; onCancel: () => void; duration?: number }) {
+  const [t, setT] = useState(duration);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
   useEffect(() => {
-    const end = Date.now() + 30000;
+    const end = Date.now() + duration * 1000;
     const iv = setInterval(() => {
       const rem = Math.max(0, Math.ceil((end - Date.now()) / 1000));
       setT(rem);
@@ -224,7 +224,7 @@ function AdIframePlayer({ onComplete, onCancel }: { onComplete: () => void; onCa
           </div>
           <div>
             <p className="text-zinc-200 text-sm font-semibold">Watching ad…</p>
-            <p className="text-zinc-500 text-xs">+0.08 $INF88$ in {t}s</p>
+            <p className="text-zinc-500 text-xs">{t > 0 ? `${t}s remaining` : "Done!"}</p>
           </div>
         </div>
         {t <= 0 && (
@@ -721,9 +721,7 @@ export default function EarnPage() {
       setMiningActive(false);
       setMiningStartedAt(null);
     } else {
-      setMiningActive(true);
-      setMiningStartedAt(Date.now());
-      showToast("Miner activated!", true);
+      setAdState({ visible: true, reason: "mining" });
     }
   }
 
@@ -741,17 +739,13 @@ export default function EarnPage() {
       {/* Ad overlay */}
       <AnimatePresence>
         {adState.visible && adState.reason === "task" && (
-          <AdIframePlayer onComplete={handleAdComplete} onCancel={handleAdCancel} />
+          <AdIframePlayer key="ad-task" onComplete={handleAdComplete} onCancel={handleAdCancel} duration={30} />
+        )}
+        {adState.visible && adState.reason === "mining" && (
+          <AdIframePlayer key="ad-mining" onComplete={handleAdComplete} onCancel={handleAdCancel} duration={10} />
         )}
         {adState.visible && adState.reason === "interstitial" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <AdPlayer
-              onComplete={handleAdComplete}
-              onCancel={handleAdCancel}
-              title="SPONSOR MESSAGE"
-              duration={10}
-            />
-          </motion.div>
+          <AdIframePlayer key="ad-interstitial" onComplete={handleAdComplete} onCancel={handleAdCancel} duration={15} />
         )}
       </AnimatePresence>
 
