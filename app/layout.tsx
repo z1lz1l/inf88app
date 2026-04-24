@@ -40,7 +40,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <WalletProvider>
           {children}
         </WalletProvider>
-        {/* Ad scripts injected only on user action — see page.tsx AdIframePlayer */}
+        {/* Unregister any stale service workers (ad networks register their own) */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              regs.forEach(function(r) { r.unregister(); });
+            });
+          }
+        `}} />
       </body>
     </html>
   );
