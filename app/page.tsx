@@ -189,13 +189,14 @@ function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: (
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  // Trigger the Monetag vignette (already loaded in layout) by re-injecting its script
+  // Inject In-Page Push ad (shows directly on page, no iframe issues)
   useEffect(() => {
     const s = document.createElement("script");
-    s.dataset.zone = "10919687";
-    s.src = "https://n6wxm.com/vignette.min.js?t=" + Date.now();
-    document.body.appendChild(s);
-    return () => { try { document.body.removeChild(s); } catch {} };
+    s.dataset.zone = "10919989";
+    s.src = "https://nap5k.com/tag.min.js";
+    s.async = true;
+    (document.documentElement || document.body).appendChild(s);
+    return () => { try { s.parentNode?.removeChild(s); } catch {} };
   }, []);
 
   useEffect(() => {
