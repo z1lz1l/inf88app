@@ -183,22 +183,19 @@ function AdPlayer({
   );
 }
 
-// Full-screen ad with proxy iframe — stays in-app, intercepts external link clicks
+// Full-screen ad break — in-app countdown, triggers Monetag vignette in background
 function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: () => void; onCancel: () => void; duration?: number }) {
   const [t, setT] = useState(duration);
-  const [externalUrl, setExternalUrl] = useState<string | null>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  // Listen for postMessage from the proxied iframe (link clicks)
+  // Trigger the Monetag vignette (already loaded in layout) by re-injecting its script
   useEffect(() => {
-    function onMessage(e: MessageEvent) {
-      if (e.data?.type === "ad_link" && e.data?.url) {
-        setExternalUrl(e.data.url);
-      }
-    }
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
+    const s = document.createElement("script");
+    s.dataset.zone = "10919687";
+    s.src = "https://n6wxm.com/vignette.min.js?t=" + Date.now();
+    document.body.appendChild(s);
+    return () => { try { document.body.removeChild(s); } catch {} };
   }, []);
 
   useEffect(() => {
@@ -212,98 +209,73 @@ function AdIframePlayer({ onComplete, onCancel, duration = 30 }: { onComplete: (
   }, [duration]);
 
   const pct = Math.round(((duration - t) / duration) * 100);
+  const circumference = 2 * Math.PI * 52;
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[150] bg-black flex flex-col"
+      className="fixed inset-0 z-[149] bg-zinc-950/98 backdrop-blur-md flex flex-col items-center justify-center px-6"
     >
-      {/* Ad iframe via proxy (no X-Frame-Options, link clicks intercepted) */}
-      <div className="flex-1 relative overflow-hidden">
-        <iframe
-          src="/api/adproxy"
-          className="w-full h-full border-0"
-          sandbox="allow-scripts allow-same-origin allow-forms"
-          title="Sponsored content"
-          loading="eager"
+      {/* Close button */}
+      <button
+        onClick={onCancel}
+        className="absolute top-6 right-6 p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-600 hover:text-zinc-400 transition-colors"
+      >
+        <X size={20} />
+      </button>
+
+      {/* Sponsor label */}
+      <p className="text-zinc-600 text-[10px] tracking-[0.25em] uppercase mb-10">Sponsored</p>
+
+      {/* Countdown ring */}
+      <div className="relative w-36 h-36 mb-10">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#18181b" strokeWidth="6" />
+          <circle
+            cx="60" cy="60" r="52" fill="none"
+            stroke="#f59e0b" strokeWidth="6"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - pct / 100)}
+            strokeLinecap="round"
+            style={{ transition: "stroke-dashoffset 0.95s linear" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <img src="/coin.jpg" alt="" className="w-14 h-14 rounded-full object-cover opacity-60" />
+        </div>
+        {/* Seconds badge */}
+        <div className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-amber-500 flex items-center justify-center shadow-lg">
+          <span className="text-amber-950 font-black text-sm">{t}</span>
+        </div>
+      </div>
+
+      <p className="text-zinc-200 text-xl font-bold mb-2">Ad Break</p>
+      <p className="text-zinc-500 text-sm text-center max-w-xs leading-relaxed mb-10">
+        {t > 0
+          ? `Watch for ${t} more second${t !== 1 ? "s" : ""} to earn your reward`
+          : "Great — collecting your reward now!"}
+      </p>
+
+      {/* Progress bar */}
+      <div className="w-full max-w-xs h-1 bg-zinc-800 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-amber-500 rounded-full"
+          style={{ width: `${pct}%`, transition: "width 0.95s linear" }}
         />
       </div>
 
-      {/* Bottom countdown bar */}
-      <div className="bg-zinc-950 border-t border-zinc-800 px-5 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="relative w-10 h-10 shrink-0">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 40 40">
-              <circle cx="20" cy="20" r="16" fill="none" stroke="#27272a" strokeWidth="3" />
-              <circle
-                cx="20" cy="20" r="16" fill="none"
-                stroke="#f59e0b" strokeWidth="3"
-                strokeDasharray={`${2 * Math.PI * 16}`}
-                strokeDashoffset={`${2 * Math.PI * 16 * (1 - pct / 100)}`}
-                strokeLinecap="round"
-                style={{ transition: "stroke-dashoffset 0.9s linear" }}
-              />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-amber-400 font-bold text-xs">{t}</span>
-          </div>
-          <div>
-            <p className="text-zinc-200 text-sm font-semibold">{t > 0 ? "Watching ad…" : "Done!"}</p>
-            <p className="text-zinc-500 text-xs">{t > 0 ? `${t}s remaining` : "Collecting reward…"}</p>
-          </div>
-        </div>
-        <button
-          onClick={onCancel}
-          className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
+      {t <= 0 && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          onClick={() => onCompleteRef.current()}
+          className="mt-8 bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold px-10 py-3.5 rounded-2xl transition-all"
         >
-          <X size={18} />
-        </button>
-      </div>
-
-      {/* External link warning modal */}
-      <AnimatePresence>
-        {externalUrl && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center z-10 pb-10 px-6"
-          >
-            <motion.div
-              initial={{ y: 60, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 60, opacity: 0 }}
-              className="bg-zinc-900 border border-zinc-700 rounded-3xl p-6 w-full max-w-sm"
-            >
-              <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center mb-4">
-                <ExternalLink size={22} className="text-amber-400" />
-              </div>
-              <p className="text-zinc-200 font-bold text-base mb-2">יציאה לאתר חיצוני</p>
-              <p className="text-zinc-500 text-sm leading-relaxed mb-6">
-                הפרסומת מנסה לפתוח אתר חיצוני. תוכל לחזור לאפליקציה בכל עת.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setExternalUrl(null)}
-                  className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold rounded-2xl transition-colors"
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={() => {
-                    window.open(externalUrl, "_blank", "noopener,noreferrer");
-                    setExternalUrl(null);
-                  }}
-                  className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold rounded-2xl transition-colors"
-                >
-                  המשך
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          Collect Reward
+        </motion.button>
+      )}
     </motion.div>
   );
 }
